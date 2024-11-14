@@ -10,10 +10,11 @@
     </style>
     <!-- טוען את THREE.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- טוען את GLTFLoader כמודול -->
-    <script type="module">
-        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
-        
+    <!-- טוען את GLTFLoader בצורה לא מודולרית -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+    <script>
         // יצירת סצנה, מצלמה ורינדור
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -34,7 +35,7 @@
         let playerMixer, botMixer;
 
         // טעינת הדמות שהומרה ל-GLTF (הדמות שלך)
-        const loader = new GLTFLoader();
+        const loader = new THREE.GLTFLoader();
         loader.load(
             'https://drive.google.com/uc?id=1cW2OFftYmuKdywAbkGgFDbVR1jvQShzZ&export=download',
             function (gltf) {
