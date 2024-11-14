@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/loaders/GLTFLoader.js"></script>
+    
+    <script>
+        // יצירת סצנה, מצלמה ורינדור
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // תאורה בסיסית
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(0, 10, 10).normalize();
+        scene.add(light);
+
+        // משתנים לשחקן והבוט
+        let player, bot;
+        let playerMixer, botMixer;
+
+        // טעינת הדמות שהומרה ל-GLTF (הדמות שלך)
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            'https://drive.google.com/uc?id=1cW2OFftYmuKdywAbkGgFDbVR1jvQShzZ&export=download',
+            function (gltf) {
+                // הגדרת השחקן
+                player = gltf.scene.clone();
+                player.position.set(-2, 0, 0);
+                player.scale.set(1, 1, 1);
+                scene.add(player);
+                
+                playerMixer = new THREE.AnimationMixer(player);
+                const playerAction = playerMixer.clipAction(gltf.animations[0]);
+                playerAction.play();
+                
+                // הגדרת הבוט
+                bot = gltf.scene.clone();
+                bot.position.set(-2, 0, 5); // קצת לצד השחקן
+                bot.scale.set(1, 1, 1);
+                scene.add(bot);
+                
+                botMixer = new THREE.AnimationMixer(bot);
+                const botAction = botMixer.clipAction(gltf.animations[0]);
+                botAction.play();
+            },
+            undefined,
+            function (error) {
+                console.error('שגיאה בטעינת הדמות:', error);
+            }
+        );
+
+        // יצירת המסלול
+        const trackGeometry = new THREE.PlaneGeometry(50, 5);
+        const trackMaterial = new THREE.MeshStandardMaterial({ color: 0x444444 });
+        const track = new THREE.Mesh(trackGeometry, trackMaterial);
+        track.rotation.x = -Math.PI / 2;
+        scene.add(track);
+
+        // יצירת מחסומים במסלול
+        const obstacleGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const obstacleMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+        let obstacles = [];
+
+        function createObstacle() {
+            const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
+            obstacle.position.set(Math.random() * 30 + 10, 0.5, Math.random() * 5);
+            scene.add(obstacle);
+            obstacles.push(obstacle);
+        }
+
+        // יצירת כמה מחסומים בהתחלה
+        for (let i = 0; i < 5; i++) {
+            createObstacle();
+        }
+
+        // משתני מהירות ותנועה
+        let playerSpeed = 0.1;
+        let botSpeed = 0.05;
+        let keys = {};
+
+        // האזנה למקשים
+        window.addEventListener('keydown', (event) => {
+            keys[event.key] = true;
+        });
+        window.addEventListener('keyup', (event) => {
+            keys[event.key] = false;
+        });
+
+        // תנועת השחקן
+        function updatePlayerMovement() {
+            if (keys['ArrowRight']) player.position.x += playerSpeed;
+            if (keys['ArrowLeft']) player.position.x -= playerSpeed;
+        }
+
+        // תנועת הבוט
+        function updateBotMovement() {
+            bot.position.x += botSpeed;
+
+            // אם הבוט מגיע לסוף המסלול, הוא יחזור להתחלה
+            if (bot.position.x > 30) {
+                bot.position.x = -30;
+            }
+        }
+
+        // עדכון המחסומים
+        function updateObstacles() {
+            for (let i = 0; i < obstacles.length; i++) {
+                obstacles[i].position.z -= 0.1; // המחסומים ינועו לכיוון השחקן
+
+                // אם מחסום יוצא מהמסלול, נעדכן אותו למיקום חדש
+                if (obstacles[i].position.z < -5) {
+                    obstacles[i].position.z = Math.random() * 5 + 10;
+                    obstacles[i].position.x = Math.random() * 30 + 10;
+                }
+            }
+        }
+
+        // פונקציית אנימציה
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (playerMixer) playerMixer.update(0.01);
+            if (botMixer) botMixer.update(0.01);
+
+            updatePlayerMovement();
+            updateBotMovement();
+            updateObstacles();
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // עדכון גודל המסך אם משתנה
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
